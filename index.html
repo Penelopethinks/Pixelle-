@@ -1089,4 +1089,39 @@ refreshAiStatus();document.getElementById('messageSearch').addEventListener('inp
   document.querySelectorAll('.highlight').forEach(item => item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); activeStory='Your story'; document.querySelector('.story-title').textContent=item.textContent.trim(); show('story'); } }));
 })();
 </script>
+<script>
+(() => {
+  const feed = document.getElementById('home');
+  if (!feed) return;
+
+  const posts = Array.from(feed.children).filter((item) => item.matches('article.post'));
+  if (posts.length < 2) return;
+
+  posts.forEach((post) => {
+    const creator = post.querySelector('.account b')?.textContent.trim() || '';
+    const image = post.querySelector('.feed-photo-image')?.getAttribute('src') || '';
+    post.dataset.feedRefreshKey = `${creator}|${image}`;
+  });
+
+  let previousFirstPost = '';
+  try {
+    previousFirstPost = localStorage.getItem('pixelle-last-feed-first-post') || '';
+  } catch {}
+
+  for (let index = posts.length - 1; index > 0; index -= 1) {
+    const otherIndex = Math.floor(Math.random() * (index + 1));
+    [posts[index], posts[otherIndex]] = [posts[otherIndex], posts[index]];
+  }
+
+  if (posts[0].dataset.feedRefreshKey === previousFirstPost) {
+    const otherIndex = 1 + Math.floor(Math.random() * (posts.length - 1));
+    [posts[0], posts[otherIndex]] = [posts[otherIndex], posts[0]];
+  }
+
+  posts.forEach((post) => feed.appendChild(post));
+  try {
+    localStorage.setItem('pixelle-last-feed-first-post', posts[0].dataset.feedRefreshKey);
+  } catch {}
+})();
+</script>
 </body></html>
