@@ -15,6 +15,5 @@ A standalone, responsive social app concept added to Pixelle at `/social-sphere/
 - Direct message demo
 - Profile editing and night mode
 - Photo uploads and local browser persistence
-- A concept shop with no checkout or payment processing
 
 Social Sphere is a front-end demo. Posts, profile edits, and interactions stay in the current browser using local storage; there is no shared account or server backend yet. Photos use Unsplash links, and fonts load from Google Fonts.
