@@ -1,21 +1,20 @@
-# Social Sphere
+# Pixelle
 
-A standalone, responsive social app concept added to Pixelle at `/social-sphere/`. It lives alongside the existing Pixelle experience and does not change the main application.
+A standalone, responsive social app experience inside the Pixelle repository at `/social-sphere/`.
 
 ## Open it
 
-- With GitHub Pages enabled, open the repository’s site URL followed by `/social-sphere/`.
+- With GitHub Pages enabled, open the repository site followed by `/social-sphere/`.
 - To run locally, open `index.html` in a browser.
 
-## What it includes
+## Features
 
-- Feed posts, likes, comments, saved posts, and sharing
-- Stories and short-form reel previews
-- Explore filters and creator suggestions
-- Direct message demo
-- Profile editing and night mode
-- Create Studio with photo posts, swipeable multi-photo carousels, Stories, Reels, collages, link posts, and saved drafts
-- A 12-person starter community with creator posts and story circles
-- Photo uploads and local browser persistence
+- Photo feed with creator avatars kept separate from post images
+- 38 fixed story moments with separate profile and story photos
+- Reels, Explore filters, creator profiles, likes, comments, and saved posts
+- Local messaging with demo replies
+- Create Studio for posts, carousels, stories, reels, collages, links, and drafts
+- Photo uploads, profile editing, and night mode
 
-Social Sphere is a front-end demo. Posts, profile edits, and interactions stay in the current browser using local storage; there is no shared account or server backend yet. Photos use Unsplash links, and fonts load from Google Fonts.
+Pixelle is a front-end demo. Content and interactions are stored in the current browser. Demo message replies are simulated.
+
