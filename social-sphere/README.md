@@ -14,6 +14,7 @@ A standalone, responsive social app concept added to Pixelle at `/social-sphere/
 - Explore filters and creator suggestions
 - Direct message demo
 - Profile editing and night mode
+- Create Studio with photo posts, swipeable multi-photo carousels, Stories, Reels, collages, link posts, and saved drafts
 - A 12-person starter community with creator posts and story circles
 - Photo uploads and local browser persistence
 
