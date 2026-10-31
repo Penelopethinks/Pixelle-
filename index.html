@@ -218,8 +218,8 @@ morePosts.slice(0, 8).forEach(post => {
 });
 
 const chatHistory={};
-let activeChat='';const chatBody=document.getElementById('chatBody'),chatView=document.getElementById('conversation'),messageList=document.getElementById('messageList');
-
+let activeChat='';
+const chatBody=document.getElementById('chatBody'),chatView=document.getElementById('conversation'),messageList=document.getElementById('messageList');
 function openChat(row){activeChat=row.dataset.chat;const name=row.querySelector('.account b').textContent;document.getElementById('chatName').textContent=name;const avatar=row.querySelector('.avatar');const chatAvatar=document.getElementById('chatAvatar');if(avatar?.tagName==='IMG'){chatAvatar.src=avatar.src;chatAvatar.hidden=false}else{chatAvatar.hidden=true}chatBody.replaceChildren();const date=document.createElement('div');date.className='chat-date';date.textContent='TODAY';chatBody.appendChild(date);const history=chatHistory[activeChat]||[];if(history.length){history.forEach(([kind,text])=>addBubble(kind,text))}else{const empty=document.createElement('div');empty.className='chat-empty';empty.innerHTML='<span>✉</span><b>No messages yet</b><small>Send the first message to start the conversation.</small>';chatBody.appendChild(empty)}messageList.hidden=true;chatView.hidden=false;document.getElementById('chatInput').focus()}
 document.querySelectorAll('#messageList .message[data-chat]').forEach(row=>{row.addEventListener('click',()=>openChat(row));row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openChat(row)}})});
 document.getElementById('chatBack').addEventListener('click',()=>{chatView.hidden=true;messageList.hidden=false;activeChat=''});
@@ -227,40 +227,67 @@ const chatInput=document.getElementById('chatInput');
 const chatSend=document.querySelector('#chatForm button[type="submit"]');
 const chatBack=document.getElementById('chatBack');
 const aiDisclosure=document.getElementById('aiDisclosure');
+const aiStatus=document.getElementById('aiConnectionStatus');
 let aiConsentGiven=false;
 let pendingMessage='';
-function addBubble(kind,text){chatBody.querySelector('.chat-empty')?.remove();const bubble=document.createElement('div');bubble.className=`bubble ${kind}`;bubble.textContent=text;chatBody.appendChild(bubble);chatBody.scrollTop=chatBody.scrollHeight;return bubble}
-function updateMessagePreview(name,text){const row=[...document.querySelectorAll('#messageList .message[data-chat]')].find(item=>item.dataset.chat===name);if(!row)return;row.querySelector('.account p').textContent=text.length>70?`${text.slice(0,67)}…`:text;row.querySelector('.time').textContent='Now';const first=document.querySelector('#messageList .message[data-chat]');if(first&&first!==row)messageList.insertBefore(row,first)}
+let liveAiAvailable=false;
+let aiStatusChecked=false;
+function addBubble(kind,text){chatBody.querySelector('.chat-empty')?.remove();const bubble=document.createElement('div');bubble.className='bubble '+kind;bubble.textContent=text;chatBody.appendChild(bubble);chatBody.scrollTop=chatBody.scrollHeight;return bubble}
+function updateMessagePreview(name,text){const row=[...document.querySelectorAll('#messageList .message[data-chat]')].find(item=>item.dataset.chat===name);if(!row)return;row.querySelector('.account p').textContent=text.length>70?text.slice(0,67)+'…':text;row.querySelector('.time').textContent='Now';const first=document.querySelector('#messageList .message[data-chat]');if(first&&first!==row)messageList.insertBefore(row,first)}
+function createDemoReply(name,text,history){
+ const firstName=name.split(/[ .@]/)[0]||name;
+ const interests={
+  'Sophie':'travel and little adventures','Emma':'photography and finding beauty in small details','Lily':'style and everyday plans','Brooke':'food and bringing people together','Alex':'the outdoors and music',
+  'ella':'style and city finds','adventurejess':'road trips and new places','lily':'fashion and everyday adventures','maya':'art and creative routines','noah':'photography and city scenes','ava':'flowers and garden projects','kai':'hiking and the outdoors','sofia':'art and painting','milo':'city walks and architecture','nina':'cooking and brunch','theo':'travel and discovering new places'
+ };
+ const interest=interests[firstName.toLowerCase()]||'creative ideas and everyday adventures';
+ const clean=text.replace(/\s+/g,' ').trim();
+ const quote=clean.length>105?clean.slice(0,102)+'…':clean;
+ const lower=clean.toLowerCase();
+ const replyCount=history.filter(([kind])=>kind==='them').length;
+ const greetings=/^(hi|hello|hey|hiya|good morning|good afternoon|good evening)(\b|[!. ,])/i.test(clean);
+ if(greetings&&clean.length<90)return ['Hey! I’m glad you messaged. How has your day been going?','Hi there! Nice to hear from you. What are you up to today?','Hey! What’s been the best part of your day so far?'][replyCount%3];
+ if(/\bhow are you\b|\bhow're you\b/.test(lower))return 'I’m doing well, thanks for asking! I’ve been thinking about '+interest+'. What’s on your mind?';
+ if(/\b(sad|upset|lonely|worried|anxious|rough day|bad day|stressed|scared|frustrated|overwhelmed)\b/.test(lower))return 'I’m sorry you’re carrying that right now. I hear you about “'+quote+'.” Want to tell me what part has been the hardest?';
+ if(/\b(thank you|thanks|thx|appreciate it)\b/.test(lower))return ['Of course 💛 I’m glad you told me. What else is on your mind?','Anytime! I’m happy we could chat. How are you feeling about it now?'][replyCount%2];
+ if(/\b(plan|ideas?|recommend|suggest|where should|what should|help me choose|weekend|trip|visit)\b/.test(lower))return 'For “'+quote+',” I’d start by picking the kind of day you want: relaxed, outdoorsy, or full of exploring. Which sounds most like you?';
+ if(/[?؟]$/.test(clean))return 'That’s a thoughtful question: “'+quote+'” I don’t want to guess at details, but I can talk it through with you. What matters most to you in the answer?';
+ return ['I hear you about “'+quote+'.” '+interest.charAt(0).toUpperCase()+interest.slice(1)+' is my kind of conversation. What happened next?','Thanks for telling me about “'+quote+'.” What part of it has been on your mind the most?','I’m following. When you say “'+quote+',” what would you like to happen next?'][replyCount%3];
+}
+function refreshAiStatus(){
+ if(location.protocol==='file:'||location.hostname.toLowerCase().endsWith('.github.io')){liveAiAvailable=false;aiStatus.textContent='Demo replies · Ready to chat';aiStatusChecked=true;return Promise.resolve()}
+ return fetch('/api/status',{cache:'no-store',signal:AbortSignal.timeout(2200)}).then(async response=>{
+  const type=response.headers.get('content-type')||'';
+  if(!response.ok||!type.includes('application/json'))throw new Error('Chat service is unavailable');
+  const data=await response.json();liveAiAvailable=Boolean(data.ready);
+ }).catch(()=>{liveAiAvailable=false}).finally(()=>{aiStatus.textContent=liveAiAvailable?'AI creator · Live replies':'Demo replies · Ready to chat';aiStatusChecked=true});
+}
+const aiStatusPromise=refreshAiStatus();
 async function sendToAI(name,text){
  const history=chatHistory[name]??(chatHistory[name]=[]);
- history.push(['me',text]);
- if(activeChat===name)addBubble('me',text);
- updateMessagePreview(name,text);
- chatInput.value='';
- chatInput.disabled=true;chatSend.disabled=true;chatBack.disabled=true;
+ history.push(['me',text]);if(activeChat===name)addBubble('me',text);updateMessagePreview(name,text);chatInput.value='';chatInput.disabled=true;chatSend.disabled=true;chatBack.disabled=true;
  const waiting=activeChat===name?addBubble('them typing','Thinking…'):null;
  try{
-  const response=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:name,history:history.map(([kind,content])=>({role:kind==='me'?'user':'assistant',content}))}),signal:AbortSignal.timeout(45000)});
-  const data=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(data.error||'Pixelle could not get a reply. Please try again.');
-  if(typeof data.reply!=='string'||!data.reply.trim())throw new Error('The AI creator sent an empty reply. Please try again.');
-  history.push(['them',data.reply.trim()]);
-  updateMessagePreview(name,data.reply.trim());
-  if(activeChat===name){waiting?.remove();addBubble('them',data.reply.trim())}
- }catch(error){
-  waiting?.remove();
-  const message=location.protocol==='file:'?'To use live replies, start Pixelle using the setup guide, then open its local link.':error.name==='TimeoutError'?'The AI is taking too long to reply. Please try sending your message again.':(error.message||'Pixelle could not reach the AI service. Check your connection and try again.');
-  if(activeChat===name)addBubble('error',message);
- }finally{chatInput.disabled=false;chatSend.disabled=false;chatBack.disabled=false;if(activeChat===name)chatInput.focus()}
+  let reply='';
+  if(liveAiAvailable){
+   try{
+    const response=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:name,history:history.map(([kind,content])=>({role:kind==='me'?'user':'assistant',content}))}),signal:AbortSignal.timeout(45000)});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||'The live reply service is unavailable.');
+    if(typeof data.reply!=='string'||!data.reply.trim())throw new Error('The AI creator sent an empty reply.');
+    reply=data.reply.trim();
+   }catch(error){liveAiAvailable=false;aiStatus.textContent='Demo replies · Ready to chat';toast('Live AI is unavailable, so a quick reply was used.');}
+  }
+  if(!reply){await new Promise(resolve=>setTimeout(resolve,360));reply=createDemoReply(name,text,history.slice(0,-1))}
+  history.push(['them',reply]);updateMessagePreview(name,reply);if(activeChat===name){waiting?.remove();addBubble('them',reply)}
+ }catch(error){waiting?.remove();if(activeChat===name)addBubble('error','I couldn’t send that message. Please try again.')}
+ finally{chatInput.disabled=false;chatSend.disabled=false;chatBack.disabled=false;if(activeChat===name)chatInput.focus()}
 }
-document.getElementById('chatForm').addEventListener('submit',e=>{e.preventDefault();const text=chatInput.value.trim();if(!text||!activeChat)return;if(text.length>4000){toast('Please keep messages under 4,000 characters.');return}pendingMessage=text;if(!aiConsentGiven){aiDisclosure.classList.add('show');document.getElementById('confirmAiSend').focus();return}sendToAI(activeChat,text)});
+document.getElementById('chatForm').addEventListener('submit',async e=>{e.preventDefault();const text=chatInput.value.trim();if(!text||!activeChat)return;if(text.length>4000){toast('Please keep messages under 4,000 characters.');return}if(!aiStatusChecked)await aiStatusPromise;pendingMessage=text;if(liveAiAvailable&&!aiConsentGiven){aiDisclosure.classList.add('show');document.getElementById('confirmAiSend').focus();return}sendToAI(activeChat,text)});
 document.getElementById('cancelAiSend').addEventListener('click',()=>{pendingMessage='';aiDisclosure.classList.remove('show');chatInput.focus()});
 document.getElementById('confirmAiSend').addEventListener('click',()=>{const text=pendingMessage;pendingMessage='';aiConsentGiven=true;aiDisclosure.classList.remove('show');if(text&&activeChat)sendToAI(activeChat,text)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&aiDisclosure.classList.contains('show')){pendingMessage='';aiDisclosure.classList.remove('show')}});
-const aiStatus=document.getElementById('aiConnectionStatus');
-async function refreshAiStatus(){if(location.protocol==='file:'){aiStatus.textContent='Open Pixelle setup to use live AI';return}try{const response=await fetch('/api/status',{cache:'no-store'});const data=await response.json();aiStatus.textContent=data.ready?'AI creator · Live replies':'AI creator · Setup needed for replies'}catch{aiStatus.textContent='AI creator · Service unavailable'}}
-refreshAiStatus();document.getElementById('messageSearch').addEventListener('input',e=>{const query=e.target.value.trim().toLowerCase();document.querySelectorAll('#messageList .message[data-chat]').forEach(row=>{row.hidden=!row.textContent.toLowerCase().includes(query)})});
-</script>
+document.getElementById('messageSearch').addEventListener('input',e=>{const query=e.target.value.trim().toLowerCase();document.querySelectorAll('#messageList .message[data-chat]').forEach(row=>{row.hidden=!row.textContent.toLowerCase().includes(query)})});</script>
 
 
 <script>
