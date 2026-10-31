@@ -255,12 +255,12 @@ function createDemoReply(name,text,history){
  return ['I hear you about “'+quote+'.” '+interest.charAt(0).toUpperCase()+interest.slice(1)+' is my kind of conversation. What happened next?','Thanks for telling me about “'+quote+'.” What part of it has been on your mind the most?','I’m following. When you say “'+quote+',” what would you like to happen next?'][replyCount%3];
 }
 function refreshAiStatus(){
- if(location.protocol==='file:'||location.hostname.toLowerCase().endsWith('.github.io')){liveAiAvailable=false;aiStatus.textContent='Demo replies · Ready to chat';aiStatusChecked=true;return Promise.resolve()}
+ if(location.protocol==='file:'||location.hostname.toLowerCase().endsWith('.github.io')){liveAiAvailable=false;aiStatus.textContent='Demo only · Live AI not connected';aiStatusChecked=true;return Promise.resolve()}
  return fetch('/api/status',{cache:'no-store',signal:AbortSignal.timeout(2200)}).then(async response=>{
   const type=response.headers.get('content-type')||'';
   if(!response.ok||!type.includes('application/json'))throw new Error('Chat service is unavailable');
   const data=await response.json();liveAiAvailable=Boolean(data.ready);
- }).catch(()=>{liveAiAvailable=false}).finally(()=>{aiStatus.textContent=liveAiAvailable?'AI creator · Live replies':'Demo replies · Ready to chat';aiStatusChecked=true});
+ }).catch(()=>{liveAiAvailable=false}).finally(()=>{aiStatus.textContent=liveAiAvailable?'AI creator · Live replies':'Demo only · Live AI not connected';aiStatusChecked=true});
 }
 const aiStatusPromise=refreshAiStatus();
 async function sendToAI(name,text){
@@ -276,7 +276,7 @@ async function sendToAI(name,text){
     if(!response.ok)throw new Error(data.error||'The live reply service is unavailable.');
     if(typeof data.reply!=='string'||!data.reply.trim())throw new Error('The AI creator sent an empty reply.');
     reply=data.reply.trim();
-   }catch(error){liveAiAvailable=false;aiStatus.textContent='Demo replies · Ready to chat';toast('Live AI is unavailable, so a quick reply was used.');}
+   }catch(error){liveAiAvailable=false;aiStatus.textContent='Demo only · Live AI not connected';toast('Live AI is unavailable, so a demo reply was used.');}
   }
   if(!reply){await new Promise(resolve=>setTimeout(resolve,360));reply=createDemoReply(name,text,history.slice(0,-1))}
   history.push(['them',reply]);updateMessagePreview(name,reply);if(activeChat===name){waiting?.remove();addBubble('them',reply)}
