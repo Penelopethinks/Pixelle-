@@ -14,6 +14,7 @@ A standalone, responsive social app concept added to Pixelle at `/social-sphere/
 - Explore filters and creator suggestions
 - Direct message demo
 - Profile editing and night mode
+- A 12-person starter community with creator posts and story circles
 - Photo uploads and local browser persistence
 
 Social Sphere is a front-end demo. Posts, profile edits, and interactions stay in the current browser using local storage; there is no shared account or server backend yet. Photos use Unsplash links, and fonts load from Google Fonts.
